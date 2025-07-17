@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Responsive Image Gallery</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        /* Custom styles for smooth transitions and aesthetics */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* A light gray background */oo
+        }
+
+        /* Smooth transition for thumbnail hover effect */
+        .gallery-item img {
+            transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+        }
+
+        /* Hover effect: scale up and add a shadow */
+        .gallery-item:hover img {
+            transform: scale(1.05);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Fade-in animation for the lightbox */
+        .lightbox {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Styling for the active filter button */
+        .filter-btn.active {
+            background-color: #4f46e5; /* Indigo */
+            color: white;
+        }
+    </style>
+</head>
+<body class="antialiased text-gray-800">
+
+    <div class="container mx-auto px-4 py-8">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-gray-900">Image Gallery</h1>
+            <p class="text-lg text-gray-600 mt-2">A collection of beautiful images</p>
+        </header>
+
+        <!-- Filter Buttons -->
+        <div id="filter-container" class="flex justify-center flex-wrap gap-2 mb-8">
+            <button class="filter-btn active px-4 py-2 bg-white rounded-full shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-200 transition-colors" data-filter="all">All</button>
+            <button class="filter-btn px-4 py-2 bg-white rounded-full shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-200 transition-colors" data-filter="nature">Nature</button>
+            <button class="filter-btn px-4 py-2 bg-white rounded-full shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-200 transition-colors" data-filter="architecture">Architecture</button>
+            <button class="filter-btn px-4 py-2 bg-white rounded-full shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-200 transition-colors" data-filter="animals">Animals</button>
+        </div>
+
+        <!-- Image Grid -->
+        <div id="gallery-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            <!-- Images will be dynamically inserted here by JavaScript -->
+        </div>
+    </div>
+
+    <!-- Lightbox Modal -->
+    <div id="lightbox" class="lightbox hidden fixed inset-0 bg-black bg-opacity-80 z-50 flex justify-center items-center p-4">
+        <!-- Close Button -->
+        <button id="close-lightbox" class="absolute top-4 right-4 text-white text-3xl hover:text-gray-300 transition-colors">&times;</button>
+
+        <!-- Previous Button -->
+        <button id="prev-btn" class="absolute left-4 sm:left-8 top-1/2 -translate-y-1/2 text-white bg-gray-800 bg-opacity-50 p-3 rounded-full hover:bg-opacity-75 transition-opacity text-2xl">&#10094;</button>
+
+        <!-- Image Container -->
+        <div class="relative">
+            <img id="lightbox-img" src="" alt="Full-size view" class="max-w-[90vw] max-h-[85vh] rounded-lg shadow-2xl">
+            <div id="lightbox-caption" class="text-center text-white mt-2 text-sm bg-black bg-opacity-50 rounded-b-lg py-1"></div>
+        </div>
+
+        <!-- Next Button -->
+        <button id="next-btn" class="absolute right-4 sm:right-8 top-1/2 -translate-y-1/2 text-white bg-gray-800 bg-opacity-50 p-3 rounded-full hover:bg-opacity-75 transition-opacity text-2xl">&#10095;</button>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- DATA ---
+            // An array of objects to hold image information.
+            // This makes the gallery easy to update and manage.
+            const imageData = [
+                { src: 'https://placehold.co/600x400/a2d2ff/ffffff?text=Nature+1', category: 'nature', caption: 'Misty Blue Mountains' },
+                { src: 'https://placehold.co/600x400/bde0fe/ffffff?text=Nature+2', category: 'nature', caption: 'Calm Lake Reflection' },
+                { src: 'https://placehold.co/600x400/ffafcc/ffffff?text=Architecture+1', category: 'architecture', caption: 'Modern Glass Facade' },
+                { src: 'https://placehold.co/600x400/ffc8dd/ffffff?text=Architecture+2', category: 'architecture', caption: 'Historic Stone Bridge' },
+                { src: 'https://placehold.co/600x400/cdb4db/ffffff?text=Animals+1', category: 'animals', caption: 'Playful Red Panda' },
+                { src: 'https://placehold.co/600x400/a2d2ff/ffffff?text=Nature+3', category: 'nature', caption: 'Sunlit Forest Path' },
+                { src: 'https://placehold.co/600x400/ffc8dd/ffffff?text=Architecture+3', category: 'architecture', caption: 'Skyscraper at Dusk' },
+                { src: 'https://placehold.co/600x400/bde0fe/ffffff?text=Nature+4', category: 'nature', caption: 'Coastal Cliffs' },
+                { src: 'https://placehold.co/600x400/cdb4db/ffffff?text=Animals+2', category: 'animals', caption: 'Majestic Eagle in Flight' },
+                { src: 'https://placehold.co/600x400/ffafcc/ffffff?text=Architecture+4', category: 'architecture', caption: 'Cozy Cottage' },
+                { src: 'https://placehold.co/600x400/a2d2ff/ffffff?text=Nature+5', category: 'nature', caption: 'Desert Sand Dunes' },
+                { src: 'https://placehold.co/600x400/cdb4db/ffffff?text=Animals+3', category: 'animals', caption: 'Curious Fox' },
+                { src: 'https://placehold.co/600x400/bde0fe/ffffff?text=Nature+6', category: 'nature', caption: 'Tropical Waterfall' },
+                { src: 'https://placehold.co/600x400/cdb4db/ffffff?text=Animals+4', category: 'animals', caption: 'Swimming Sea Turtle' },
+                { src: 'https://placehold.co/600x400/ffc8dd/ffffff?text=Architecture+5', category: 'architecture', caption: 'Ornate Cathedral Interior' },
+            ];
+
+            // --- DOM ELEMENTS ---
+            const galleryGrid = document.getElementById('gallery-grid');
+            const lightbox = document.getElementById('lightbox');
+            const lightboxImg = document.getElementById('lightbox-img');
+            const lightboxCaption = document.getElementById('lightbox-caption');
+            const closeLightboxBtn = document.getElementById('close-lightbox');
+            const prevBtn = document.getElementById('prev-btn');
+            const nextBtn = document.getElementById('next-btn');
+            const filterContainer = document.getElementById('filter-container');
+
+            let currentImageIndex = 0;
+            let currentFilter = 'all';
+            let filteredImages = [];
+
+            // --- FUNCTIONS ---
+
+            /**
+             * Populates the gallery grid with images based on the current filter.
+             */
+            function populateGallery() {
+                galleryGrid.innerHTML = ''; // Clear the grid first
+
+                filteredImages = imageData.filter(image => 
+                    currentFilter === 'all' || image.category === currentFilter
+                );
+
+                filteredImages.forEach((image, index) => {
+                    const item = document.createElement('div');
+                    item.className = 'gallery-item cursor-pointer overflow-hidden rounded-lg shadow-md';
+                    item.innerHTML = `<img src="${image.src}" alt="${image.caption}" class="w-full h-full object-cover">`;
+                    
+                    // Add an error handler for placeholder images
+                    item.querySelector('img').onerror = function() {
+                        this.onerror=null;
+                        this.src='https://placehold.co/600x400/ef4444/ffffff?text=Image+Not+Found';
+                    };
+
+                    item.addEventListener('click', () => openLightbox(index));
+                    galleryGrid.appendChild(item);
+                });
+            }
+
+            /**
+             * Opens the lightbox to show the selected image.
+             * @param {number} index - The index of the image in the `filteredImages` array.
+             */
+            function openLightbox(index) {
+                currentImageIndex = index;
+                updateLightboxImage();
+                lightbox.classList.remove('hidden');
+                document.body.style.overflow = 'hidden'; // Prevent background scrolling
+            }
+
+            /**
+             * Closes the lightbox.
+             */
+            function closeLightbox() {
+                lightbox.classList.add('hidden');
+                document.body.style.overflow = 'auto'; // Restore scrolling
+            }
+
+            /**
+             * Updates the lightbox with the current image and caption.
+             */
+            function updateLightboxImage() {
+                const image = filteredImages[currentImageIndex];
+                lightboxImg.src = image.src;
+                lightboxCaption.textContent = image.caption;
+            }
+
+            /**
+             * Shows the next image in the lightbox.
+             */
+            function showNextImage() {
+                currentImageIndex = (currentImageIndex + 1) % filteredImages.length;
+                updateLightboxImage();
+            }
+
+            /**
+             * Shows the previous image in the lightbox.
+             */
+            function showPrevImage() {
+                currentImageIndex = (currentImageIndex - 1 + filteredImages.length) % filteredImages.length;
+                updateLightboxImage();
+            }
+
+            /**
+             * Handles keyboard navigation for the lightbox.
+             * @param {KeyboardEvent} e - The event object.
+             */
+            function handleKeydown(e) {
+                if (lightbox.classList.contains('hidden')) return;
+                if (e.key === 'ArrowRight') showNextImage();
+                if (e.key === 'ArrowLeft') showPrevImage();
+                if (e.key === 'Escape') closeLightbox();
+            }
+            
+            /**
+             * Handles filter button clicks.
+             * @param {MouseEvent} e - The event object.
+             */
+            function handleFilterClick(e) {
+                if (e.target.tagName !== 'BUTTON') return;
+
+                // Update active button style
+                filterContainer.querySelector('.active').classList.remove('active');
+                e.target.classList.add('active');
+
+                // Apply the filter and repopulate the gallery
+                currentFilter = e.target.dataset.filter;
+                populateGallery();
+            }
+
+
+            // --- EVENT LISTENERS ---
+            closeLightboxBtn.addEventListener('click', closeLightbox);
+            nextBtn.addEventListener('click', showNextImage);
+            prevBtn.addEventListener('click', showPrevImage);
+            document.addEventListener('keydown', handleKeydown);
+            filterContainer.addEventListener('click', handleFilterClick);
+            
+            // Close lightbox if the backdrop is clicked
+            lightbox.addEventListener('click', (e) => {
+                if (e.target === lightbox) {
+                    closeLightbox();
+                }
+            });
+
+
+            // --- INITIALIZATION ---
+            populateGallery();
+        });
+    </script>
+
+</body>
+</html>
